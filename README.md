@@ -1,5 +1,7 @@
-# FlowRouter [![Build Status](https://travis-ci.org/kadirahq/flow-router.svg?branch=master)](https://travis-ci.org/kadirahq/flow-router) [![Stories in Ready](https://badge.waffle.io/kadirahq/flow-router.svg?label=doing&title=Activities)](http://waffle.io/kadirahq/flow-router)
+# FlowRouter SSR
 
+## Important: this is a fork of Karida's original FlowRouter SSR branch. It is a quick fix, it is NOT backward compatible, it will probably not be supported
+in the future. Use at your own risks. I'm realising it to fix my own problems :)
 
 Carefully Designed Client Side Router for Meteor.
 
