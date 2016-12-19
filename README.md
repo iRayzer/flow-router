@@ -1,7 +1,21 @@
 # FlowRouter SSR
 
-## Important: this is a fork of Karida's original FlowRouter SSR branch. It is a quick fix, it is NOT backward compatible, it will probably not be supported
-in the future. Use at your own risks. I'm realising it to fix my own problems :)
+## Important: this is a fork of Karida's original FlowRouter SSR branch. It is a quick fix, it is NOT backward compatible, it will probably not be supported in the future. Use at your own risks. I'm releasing it to fix my own problems :)
+
+To use this you will have to remove everything Kadira related you should have installed to get SSR working:
+* `meteor remove kadira:inject-data`
+* `meteor remove kadira:fast-render`
+* `meteor remove kadira:flow-router-ssr`
+
+Then install this version, which comes bundled with [abeck](https://github.com/abecks)'s new meteor 1.3.4 compatible packages:
+* `meteor add bensventures:flow-router-ssr // This will install staringatlights' inject-data and fast-render packages`
+* `meteor add bensventures:dochead //for good mesure. You probably want good seo`
+
+Last but not least, you need to change the npm modules `react-mounter` so it works with this package. Search in the modules dist folder for references to `kadira:flow-router-ssr` and replace them with `bensventures:flow-router-ssr`.
+
+This version of FlowRouter does NOT support subscription management.
+
+# Original Doc
 
 Carefully Designed Client Side Router for Meteor.
 
@@ -543,63 +557,6 @@ Then the route object will be something like this:
 
 So, it's not the internal route object we are using.
 
-## Subscription Management
-
-For Subscription Management, we highly suggest you to follow [Template/Component level subscriptions](https://kadira.io/academy/meteor-routing-guide/content/subscriptions-and-data-management). Visit this [guide](https://kadira.io/academy/meteor-routing-guide/content/subscriptions-and-data-management) for that.
-
-FlowRouter also has it's own subscription registration mechanism. We will remove this in version 3.0. We don't remove or deprecate it in version 2.x because this is the easiest way to implement FastRender support for your app. In 3.0 we've better support for FastRender with Server Side Rendering.
-
-FlowRouter only deals with registration of subscriptions. It does not wait until subscription becomes ready. This is how to register a subscription.
-
-~~~js
-FlowRouter.route('/blog/:postId', {
-    subscriptions: function(params, queryParams) {
-        this.register('myPost', Meteor.subscribe('blogPost', params.postId));
-    }
-});
-~~~
-
-We can also register global subscriptions like this:
-
-~~~js
-FlowRouter.subscriptions = function() {
-  this.register('myCourses', Meteor.subscribe('courses'));
-};
-~~~
-
-All these global subscriptions run on every route. So, pay special attention to names when registering subscriptions.
-
-After you've registered your subscriptions, you can reactively check for the status of those subscriptions like this:
-
-~~~js
-Tracker.autorun(function() {
-    console.log("Is myPost ready?:", FlowRouter.subsReady("myPost"));
-    console.log("Are all subscriptions ready?:", FlowRouter.subsReady());
-});
-~~~
-
-So, you can use `FlowRouter.subsReady` inside template helpers to show the loading status and act accordingly.
-
-### FlowRouter.subsReady() with a callback
-
-Sometimes, we need to use `FlowRouter.subsReady()` in places where an autorun is not available. One such example is inside an event handler. For such places, we can use the callback API of `FlowRouter.subsReady()`.
-
-~~~js
-Template.myTemplate.events({
-   "click #id": function(){
-      FlowRouter.subsReady("myPost", function() {
-         // do something
-      });
-  }
-});
-~~~
-
-> Arunoda has discussed more about Subscription Management in FlowRouter in [this](https://meteorhacks.com/flow-router-and-subscription-management.html#subscription-management) blog post about [FlowRouter and Subscription Management](https://meteorhacks.com/flow-router-and-subscription-management.html).
-
-> He's showing how to build an app like this:
-
->![FlowRouter's Subscription Management](https://cldup.com/esLzM8cjEL.gif)
-
 #### Fast Render
 FlowRouter has built in support for [Fast Render](https://github.com/meteorhacks/fast-render).
 
@@ -621,10 +578,6 @@ FlowRouter.route('/blog/:postId', {
     }
 });
 ~~~
-
-#### Subscription Caching
-
-You can also use [Subs Manager](https://github.com/meteorhacks/subs-manager) for caching subscriptions on the client. We haven't done anything special to make it work. It should work as it works with other routers.
 
 ## IE9 Support
 
@@ -669,110 +622,3 @@ If you've more ideas for the add-on API, [let us know](https://github.com/kadira
 FlowRouter and Iron Router are two different routers. Iron Router tries to be a full featured solution. It tries to do everything including routing, subscriptions, rendering and layout management.
 
 FlowRouter is a minimalistic solution focused on routing with UI performance in mind. It exposes APIs for related functionality.
-
-Let's learn more about the differences:
-
-### Rendering
-
-FlowRouter doesn't handle rendering. By decoupling rendering from the router it's possible to use any rendering framework, such as [Blaze Layout](https://github.com/kadirahq/blaze-layout) to render with Blaze's Dynamic Templates. Rendering calls are made in the the route's action. We have a layout manager for [React](https://github.com/kadirahq/meteor-react-layout) as well.
-
-### Subscriptions
-
-With FlowRouter, we highly suggest using template/component layer subscriptions. But, if you need to do routing in the router layer, FlowRouter has [subscription registration](#subscription-management) mechanism. Even with that, FlowRouter never waits for the subscriptions and view layer to do it.
-
-### Reactive Content
-
-In Iron Router you can use reactive content inside the router, but any hook or method can re-run in an unpredictable manner. FlowRouter limits reactive data sources to a single run; when it is first called.
-
-We think that's the way to go. Router is just a user action. We can work with reactive content in the rendering layer.
-
-### router.current() is evil
-
-`Router.current()` is evil. Why? Let's look at following example. Imagine we have a route like this in our app:
-
-~~~
-/apps/:appId/:section
-~~~
-
-Now let's say, we need to get `appId` from the URL. Then we will do, something like this in Iron Router.
-
-~~~js
-Templates['foo'].helpers({
-    "someData": function() {
-        var appId = Router.current().params.appId;
-        return doSomething(appId);
-    }
-});
-~~~
-
-Let's say we changed `:section` in the route. Then the above helper also gets rerun. If we add a query param to the URL, it gets rerun. That's because `Router.current()` looks for changes in the route(or URL). But in any of above cases, `appId` didn't get changed.
-
-Because of this, a lot parts of our app get re-run and re-rendered. This creates unpredictable rendering behavior in our app.
-
-FlowRouter fixes this issue by providing the `Router.getParam()` API. See how to use it:
-
-~~~js
-Templates['foo'].helpers({
-    "someData": function() {
-        var appId = FlowRouter.getParam('appId');
-        return doSomething(appId);
-    }
-});
-~~~
-
-### No data context
-
-FlowRouter does not have a data context. Data context has the same problem as reactive `.current()`. We believe, it'll possible to get data directly in the template (component) layer.
-
-### Built in Fast Render Support
-
-FlowRouter has built in [Fast Render](https://github.com/meteorhacks/fast-render) support. Just add Fast Render to your app and it'll work. Nothing to change in the router.
-
-For more information check [docs](#fast-render).
-
-### Server Side Routing
-
-FlowRouter is a client side router and it **does not** support server side routing at all. But `subscriptions` run on the server to enable Fast Render support.
-
-#### Reason behind that
-
-Meteor is not a traditional framework where you can send HTML directly from the server. Meteor needs to send a special set of HTML to the client initially. So, you can't directly send something to the client yourself.
-
-Also, in the server we need look for different things compared with the client. For example:
-
-* In the server we have to deal with headers.
-* In the server we have to deal with methods like `GET`, `POST`, etc.
-* In the server we have Cookies.
-
-So, it's better to use a dedicated server-side router like [`meteorhacks:picker`](https://github.com/meteorhacks/picker). It supports connect and express middlewares and has a very easy to use route syntax.
-
-### Server Side Rendering
-
-FlowRouter 3.0 will have server side rendering support. We've already started the initial version and check our [`ssr`](https://github.com/meteorhacks/flow-router/tree/ssr) branch for that.
-
-It's currently very usable and Kadira already using it for <https://kadira.io>
-
-### Better Initial Loading Support
-
-In Meteor, we have to wait until all the JS and other resources send before rendering anything. This is an issue. In 3.0, with the support from Server Side Rendering we are going to fix it.
-
-## Migrating into 2.0
-
-Migrating into version 2.0 is easy and you don't need to change any application code since you are already using 2.0 features and the APIs. In 2.0, we've changed names and removed some deprecated APIs.
-
-Here are the steps to migrate your app into 2.0.
-
-#### Use the New FlowRouter Package
-* Now FlowRouter comes as `kadira:flow-router`
-* So, remove `meteorhacks:flow-router` with : `meteor remove meteorhacks:flow-router`
-* Then, add `kadira:flow-router` with `meteor add kadira:flow-router`
-
-#### Change FlowLayout into BlazeLayout
-* We've also renamed FlowLayout as [BlazeLayout](https://github.com/kadirahq/blaze-layout).
-* So, remove `meteorhacks:flow-layout` and add `kadira:blaze-layout` instead.
-* You need to use `BlazeLayout.render()` instead of `FlowLayout.render()`
-
-#### Stop using deprecated Apis
-* There is no middleware support. Use triggers instead.
-* There is no API called `.reactiveCurrent()`, use `.watchPathChange()` instead.
-* Earlier, you can access query params with `FlowRouter.current().params.query`. But, now you can't do that. Use `FlowRouter.current().queryParams` instead.
