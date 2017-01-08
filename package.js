@@ -1,8 +1,8 @@
 Package.describe({
-  name: 'bensventures:flow-router-ssr',
+  name: 'mighdy:flow-router-ssr',
   summary: 'Same as kadira:flow-router, but with SSR support. Not backward compatible, Meteor 1.3+',
   version: '3.13.1',
-  git: 'https://github.com/bensventures/flow-router-ssr.git'
+  git: 'https://github.com/iRayzer/flow-router.git'
 });
 
 Package.onUse(function(api) {
